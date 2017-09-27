@@ -1,0 +1,73 @@
+﻿USE [TestDB]
+GO
+
+--Turning on CLR functionality
+--By default, CLR is disabled in SQL Server so to turn it on
+--we need to run this command against our database
+EXEC sp_configure 'clr enabled', 1
+GO
+RECONFIGURE
+GO
+
+--Checking if the SQL assesmbly we want to create already exists
+--If exists, drop it to recreate
+IF EXISTS
+(
+	SELECT *
+	FROM sys.assemblies
+	WHERE name = 'SQLServerCLRAssembly'
+)
+BEGIN
+	-- To drop the SQL assembly, we must first drop all functions
+	-- which reference this SQL assembly
+	IF EXISTS
+	(
+        SELECT *
+        FROM INFORMATION_SCHEMA.ROUTINES
+        WHERE ROUTINE_NAME = 'HelloWorld'
+        AND ROUTINE_SCHEMA = 'dbo'
+        AND ROUTINE_TYPE = 'FUNCTION'
+	)
+	DROP FUNCTION [dbo].HelloWorld
+
+	IF EXISTS
+	(
+        SELECT *
+        FROM INFORMATION_SCHEMA.ROUTINES
+        WHERE ROUTINE_NAME = 'ReplaceWithRegExp'
+        AND ROUTINE_SCHEMA = 'dbo'
+        AND ROUTINE_TYPE = 'FUNCTION'
+	)
+	DROP FUNCTION [dbo].ReplaceWithRegExp
+
+	-- Dropping the SQL assmbly
+	DROP ASSEMBLY SQLServerCLRAssembly
+END
+
+-- Creating the SQL assembly and linking it to the C# library DLL we created
+CREATE ASSEMBLY SQLServerCLRAssembly FROM 'C:\SQLServerCLR.dll'
+GO
+
+-- Creating SQL wraping functions to use the C# methods we created in the C# library
+CREATE FUNCTION dbo.HelloWorld
+(
+	@name as nvarchar(MAX)
+)
+RETURNS nvarchar(MAX)
+AS EXTERNAL NAME SQLServerCLRAssembly.[SQLServerClrNS.CLRFunctions].HelloWorld
+--SQLAssemblyName.[C#NameSpace".C#ClassName].C#MethodName
+GO
+
+CREATE FUNCTION dbo.ReplaceWithRegExp
+(
+	@SourceStr as nvarchar(MAX)
+	, @RegExp as nvarchar(MAX)
+	, @ReplacementStr as nvarchar(MAX)
+)
+RETURNS nvarchar(MAX)
+AS EXTERNAL NAME SQLServerCLRAssembly.[SQLServerClrNS.CLRFunctions].ReplaceWithRegExp
+--SQLAssemblyName.[C#NameSpace".C#ClassName].C#MethodName
+GO
+
+SELECT dbo.HelloWorld('Ahmed Tarek')
+SELECT dbo.ReplaceWithRegExp('Ahmed Tarek', 'Tarek', 'Tarek Hasan')
