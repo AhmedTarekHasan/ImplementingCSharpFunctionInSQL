@@ -20,3 +20,8 @@ So, I dreamed that I can use regular expressions in my SQL UPDATE statement, thi
 
 ## Related Links:
 * [Development Simply Put Blog Post](http://developmentsimplyput.blogspot.com/2012/10/how-to-call-c-methods-in-sql.html)
+
+<br/>
+
+## Authors:
+* [Ahmed Tarek Hasan](https://linkedin.com/in/atarekhasan)
